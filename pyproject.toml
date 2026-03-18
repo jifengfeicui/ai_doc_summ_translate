@@ -1,0 +1,32 @@
+[project]
+name = "summ-translate"
+version = "1.0.0"
+description = "文档总结与翻译系统"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+
+dependencies = [
+    "fastapi[all]>=0.104.0",
+    "uvicorn>=0.23.2",
+    "sqlalchemy>=2.0.0",
+    "pydantic>=2.4.0",
+    "python-multipart>=0.0.6",
+    "pydantic-ai>=0.1.0",
+    "python-docx>=0.8.11",
+    "python-pptx>=0.6.21",
+    "pypdf>=3.16.0",
+    "aiofiles>=23.2.1",
+    "pymupdf>=1.22.0",
+    "ollama>=0.5.1",
+    "mineru[core]>=0.1.0",
+    "anyio>=4.11.0",
+    "python-dotenv>=1.1.1",
+    "python-dateutil>=2.9.0.post0",
+]
+
+
+
+

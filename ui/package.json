@@ -1,0 +1,87 @@
+{
+  "name": "summ-translate-ui",
+  "version": "0.1.0",
+  "description": "文档总结与翻译系统 - Electron 桌面应用",
+  "main": "electron/main.js",
+  "private": true,
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "cross-env NODE_ENV=development electron .",
+    "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run dev:electron\"",
+    "build": "vite build",
+    "build:electron": "npm run build && electron-builder",
+    "build:win": "npm run build && electron-builder --win",
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:linux": "npm run build && electron-builder --linux",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.6.2",
+    "element-plus": "^2.11.5",
+    "highlight.js": "^11.11.1",
+    "marked": "^16.4.1",
+    "vue": "^3.3.11",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^41.0.3",
+    "electron-builder": "^25.1.8",
+    "sass": "^1.69.5",
+    "vite": "^5.0.10",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.summ-translate.app",
+    "productName": "文档总结与翻译系统",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.icns"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "文档总结与翻译系统"
+    }
+  }
+}
