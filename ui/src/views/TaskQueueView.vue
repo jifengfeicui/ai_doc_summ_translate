@@ -3,6 +3,12 @@
     <div class="page-header">
       <h2>任务队列</h2>
       <el-space>
+        <el-switch
+          v-model="autoRefreshEnabled"
+          active-text="自动刷新"
+          inactive-text="自动刷新"
+          style="--el-switch-on-color: #67c23a; --el-switch-off-color: #dcdfe6;"
+        />
         <el-button :icon="Refresh" @click="refreshTasks" :loading="refreshing">
           刷新
         </el-button>
@@ -16,76 +22,106 @@
       </el-space>
     </div>
 
-    <!-- 统计信息 -->
+    <!-- 统计信息（可点击筛选） -->
     <el-row :gutter="16" style="margin-bottom: 20px;">
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic title="总任务数" :value="tasks.length">
-            <template #prefix>
-              <el-icon><List /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === '' }"
+          @click="statusFilter = ''">
+          <el-card shadow="hover">
+            <el-statistic title="总任务数" :value="tasks.length">
+              <template #prefix>
+                <el-icon><List /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic 
-            title="等待中" 
-            :value="statusCount.pending" 
-            value-style="color: #909399;">
-            <template #prefix>
-              <el-icon><Clock /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === 'pending' }"
+          @click="toggleStatusFilter('pending')">
+          <el-card shadow="hover">
+            <el-statistic 
+              title="等待中" 
+              :value="statusCount.pending" 
+              value-style="color: #909399;">
+              <template #prefix>
+                <el-icon><Clock /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic 
-            title="处理中" 
-            :value="statusCount.processing" 
-            value-style="color: #409eff;">
-            <template #prefix>
-              <el-icon><Loading /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === 'processing' }"
+          @click="toggleStatusFilter('processing')">
+          <el-card shadow="hover">
+            <el-statistic 
+              title="处理中" 
+              :value="statusCount.processing" 
+              value-style="color: #409eff;">
+              <template #prefix>
+                <el-icon><Loading /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic 
-            title="已完成" 
-            :value="statusCount.completed"
-            value-style="color: #67c23a;">
-            <template #prefix>
-              <el-icon><CircleCheck /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === 'completed' }"
+          @click="toggleStatusFilter('completed')">
+          <el-card shadow="hover">
+            <el-statistic 
+              title="已完成" 
+              :value="statusCount.completed"
+              value-style="color: #67c23a;">
+              <template #prefix>
+                <el-icon><CircleCheck /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic 
-            title="已取消" 
-            :value="statusCount.cancelled"
-            value-style="color: #e6a23c;">
-            <template #prefix>
-              <el-icon><WarningFilled /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === 'failed' }"
+          @click="toggleStatusFilter('failed')">
+          <el-card shadow="hover">
+            <el-statistic 
+              title="失败" 
+              :value="statusCount.failed"
+              value-style="color: #f56c6c;">
+              <template #prefix>
+                <el-icon><CircleClose /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
       <el-col :span="4">
-        <el-card shadow="hover">
-          <el-statistic 
-            title="失败" 
-            :value="statusCount.failed"
-            value-style="color: #f56c6c;">
-            <template #prefix>
-              <el-icon><CircleClose /></el-icon>
-            </template>
-          </el-statistic>
-        </el-card>
+        <div 
+          class="stat-card"
+          :class="{ 'stat-card-active': statusFilter === 'cancelled' }"
+          @click="toggleStatusFilter('cancelled')">
+          <el-card shadow="hover">
+            <el-statistic 
+              title="已取消" 
+              :value="statusCount.cancelled"
+              value-style="color: #e6a23c;">
+              <template #prefix>
+                <el-icon><WarningFilled /></el-icon>
+              </template>
+            </el-statistic>
+          </el-card>
+        </div>
       </el-col>
     </el-row>
 
@@ -218,6 +254,15 @@
                 @click="downloadResult(scope.row.id)">
                 下载
               </el-button>
+              <!-- 预览按钮 - 已完成的任务 -->
+              <el-button 
+                v-if="scope.row.status === 'completed'" 
+                type="info" 
+                size="small"
+                :icon="View"
+                @click="quickPreview(scope.row.id)">
+                预览
+              </el-button>
               <!-- 重试按钮 - 失败、已完成、已取消的任务 -->
               <el-button 
                 v-if="['failed', 'completed', 'cancelled'].includes(scope.row.status)" 
@@ -252,6 +297,14 @@
         />
       </div>
     </el-card>
+
+    <MarkdownViewer
+      v-model="previewDialogVisible"
+      :title="previewTitle"
+      :content="previewContent"
+      :file-name="previewFileName"
+      :loading="previewLoading"
+    />
   </div>
 </template>
 
@@ -269,9 +322,11 @@ import {
   CircleCheck,
   CircleClose,
   Clock,
-  WarningFilled
+  WarningFilled,
+  View
 } from '@element-plus/icons-vue'
 import { taskApi, fileApi } from '@/api'
+import MarkdownViewer from '@/components/MarkdownViewer.vue'
 
 const router = useRouter()
 const tasks = ref([])
@@ -283,6 +338,12 @@ const statusFilter = ref('')
 const typeFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
+const autoRefreshEnabled = ref(true)
+const previewDialogVisible = ref(false)
+const previewContent = ref('')
+const previewFileName = ref('')
+const previewTitle = ref('')
+const previewLoading = ref(false)
 
 let autoRefreshTimer = null
 
@@ -581,7 +642,7 @@ const handleCurrentChange = (val) => {
 // 自动刷新(每5秒)
 const startAutoRefresh = () => {
   autoRefreshTimer = setInterval(() => {
-    // 仅当有处理中的任务时才自动刷新
+    if (!autoRefreshEnabled.value) return
     if (statusCount.value.processing > 0 || statusCount.value.pending > 0) {
       fetchTasks()
     }
@@ -592,6 +653,31 @@ const stopAutoRefresh = () => {
   if (autoRefreshTimer) {
     clearInterval(autoRefreshTimer)
     autoRefreshTimer = null
+  }
+}
+
+const toggleStatusFilter = (status) => {
+  if (statusFilter.value === status) {
+    statusFilter.value = ''
+  } else {
+    statusFilter.value = status
+  }
+}
+
+const quickPreview = async (taskId) => {
+  try {
+    previewLoading.value = true
+    const task = tasks.value.find(t => t.id === taskId)
+    const response = await taskApi.getTaskContent(taskId)
+    previewContent.value = response.content
+    previewFileName.value = response.file_name || task?.file?.file_name || '任务结果'
+    previewTitle.value = `任务结果 - ${previewFileName.value}`
+    previewDialogVisible.value = true
+  } catch (error) {
+    console.error('获取任务结果失败:', error)
+    ElMessage.error('获取任务结果失败')
+  } finally {
+    previewLoading.value = false
   }
 }
 
@@ -617,6 +703,20 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+}
+
+.stat-card {
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.stat-card:hover .el-card {
+  border-color: #409eff;
+}
+
+.stat-card-active .el-card {
+  border-color: #409eff;
+  background: linear-gradient(135deg, #ecf5ff 0%, #f0f9ff 100%);
 }
 </style>
 
