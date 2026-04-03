@@ -28,9 +28,9 @@
         <div 
           class="stat-card"
           :class="{ 'stat-card-active': statusFilter === '' }"
-          @click="statusFilter = ''">
+          @click="toggleStatusFilter('')">
           <el-card shadow="hover">
-            <el-statistic title="总任务数" :value="tasks.length">
+            <el-statistic title="总任务数" :value="total">
               <template #prefix>
                 <el-icon><List /></el-icon>
               </template>
@@ -177,6 +177,14 @@
             </div>
           </template>
         </el-table-column>
+        <el-table-column label="工作区" width="120">
+          <template #default="scope">
+            <el-tag v-if="scope.row.file?.workspace_name" size="small">
+              {{ scope.row.file.workspace_name }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="task_type" label="任务类型" width="100">
           <template #default="scope">
             <el-tag :type="scope.row.task_type === 'summarize' ? 'success' : 'primary'" size="small">
@@ -290,7 +298,7 @@
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
           :page-sizes="[10, 20, 50, 100]"
-          :total="filteredTasks.length"
+          :total="total"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
@@ -338,6 +346,7 @@ const statusFilter = ref('')
 const typeFilter = ref('')
 const currentPage = ref(1)
 const pageSize = ref(20)
+const total = ref(0)
 const autoRefreshEnabled = ref(true)
 const previewDialogVisible = ref(false)
 const previewContent = ref('')
@@ -387,8 +396,9 @@ const filteredTasks = computed(() => {
 const fetchTasks = async () => {
   try {
     loading.value = true
-    const response = await taskApi.getTasks()
+    const response = await taskApi.getTasks(currentPage.value, pageSize.value, statusFilter.value)
     tasks.value = response.tasks || []
+    total.value = response.total || 0
     
     // 同时获取文件信息
     const filesResponse = await fileApi.getFiles()
@@ -503,7 +513,7 @@ const viewResult = (taskId) => {
 
 // 下载结果
 const downloadResult = (taskId) => {
-  taskApi.downloadTaskResult(taskId)
+  window.location.href = `/api/tasks/${taskId}/download`
   ElMessage.success('开始下载')
 }
 
@@ -633,10 +643,12 @@ const formatDateTime = (dateString) => {
 // 分页处理
 const handleSizeChange = (val) => {
   pageSize.value = val
+  fetchTasks()
 }
 
 const handleCurrentChange = (val) => {
   currentPage.value = val
+  fetchTasks()
 }
 
 // 自动刷新(每5秒)
@@ -657,11 +669,15 @@ const stopAutoRefresh = () => {
 }
 
 const toggleStatusFilter = (status) => {
-  if (statusFilter.value === status) {
+  if (status === '') {
+    statusFilter.value = ''
+  } else if (statusFilter.value === status) {
     statusFilter.value = ''
   } else {
     statusFilter.value = status
   }
+  currentPage.value = 1
+  fetchTasks()
 }
 
 const quickPreview = async (taskId) => {

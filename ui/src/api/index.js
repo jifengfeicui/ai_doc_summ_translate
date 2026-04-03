@@ -89,9 +89,9 @@ export const fileApi = {
 
 // 任务相关API
 export const taskApi = {
-  // 获取任务列表
-  getTasks() {
-    return api.get('/tasks/')
+  // 获取任务列表（分页）
+  getTasks(page = 1, pageSize = 20, status = '') {
+    return api.get(`/tasks/?page=${page}&page_size=${pageSize}&status=${status}`)
   },
   
   // 获取任务详情
@@ -126,7 +126,7 @@ export const taskApi = {
   
   // 下载任务结果
   downloadTaskResult(taskId) {
-    window.open(`/api/tasks/${taskId}/download`, '_blank')
+    window.location.href = `/api/tasks/${taskId}/download`
   },
   
   // 获取任务输出内容（用于预览）
@@ -140,6 +140,44 @@ export const contentApi = {
   // 获取文件的原始 Markdown 内容
   getFileMdContent(fileId) {
     return api.get(`/files/${fileId}/md-content`)
+  }
+}
+
+// 工作区相关API
+export const workspaceApi = {
+  createWorkspace(name, description) {
+    return api.post('/workspaces/', { name, description })
+  },
+  getWorkspaces() {
+    return api.get('/workspaces/')
+  },
+  getWorkspaceDetail(workspaceId, page = 1, pageSize = 20) {
+    return api.get(`/workspaces/${workspaceId}?page=${page}&page_size=${pageSize}`)
+  },
+  updateWorkspace(workspaceId, name, description) {
+    return api.put(`/workspaces/${workspaceId}`, { name, description })
+  },
+  deleteWorkspace(workspaceId) {
+    return api.delete(`/workspaces/${workspaceId}`)
+  },
+  addFilesToWorkspace(workspaceId, fileIds) {
+    return api.post(`/workspaces/${workspaceId}/files`, { file_ids: fileIds })
+  },
+  removeFilesFromWorkspace(workspaceId, fileIds) {
+    return api.delete(`/workspaces/${workspaceId}/files`, { data: { file_ids: fileIds } })
+  },
+  scanFolder(workspaceId, folderPath) {
+    return api.post(`/workspaces/${workspaceId}/scan-folder`, { folder_path: folderPath })
+  },
+  createWorkspaceTasks(workspaceId, taskType, useOcr = false, duplicateHandling = 'skip') {
+    return api.post(`/workspaces/${workspaceId}/tasks/${taskType}`, {
+      task_type: taskType,
+      use_ocr: useOcr,
+      duplicate_handling: duplicateHandling
+    })
+  },
+  exportCsv(workspaceId) {
+    window.location.href = `/api/workspaces/${workspaceId}/export-csv`
   }
 }
 
